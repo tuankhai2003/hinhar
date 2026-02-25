@@ -347,4 +347,27 @@
                                             </div>
                                             <div>
                                                 <p className="font-semibold text-gray-200">{playingVideo.channel}</p>
-    
+                                                <p className="text-xs text-gray-400">{playingVideo.views} lượt xem</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <button 
+                                            onClick={() => setPlayingVideo(null)}
+                                            className="px-6 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm font-semibold rounded-full transition-colors shrink-0"
+                                        >
+                                            Đóng
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
