@@ -3,51 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AR Hộp Gập - Tối Ưu Cảm Ứng</title>
+    <title>AR Geometry Pro - Minimal UI</title>
     <style>
-        /* touch-action: none; khóa cuộn trang mặc định của điện thoại để vuốt mô hình không bị khựng */
         body { 
             margin: 0; 
             overflow: hidden; 
-            font-family: sans-serif; 
+            font-family: 'Segoe UI', Roboto, sans-serif; 
             background-color: #1a1a1a; 
             touch-action: none; 
         }
-        
-        #ui-panel {
-            position: absolute; top: 15px; right: 15px;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 15px; border-radius: 10px;
-            width: 260px; z-index: 1000;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-            transition: transform 0.3s ease;
-        }
-        .collapsed { transform: translateX(150%); }
 
+        /* Nút Cài đặt */
         #toggle-ui {
-            position: absolute; top: 15px; right: 290px;
-            padding: 10px; background: white; border-radius: 8px;
-            cursor: pointer; font-weight: bold; z-index: 1001;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            transition: right 0.3s ease;
+            position: absolute; top: 15px; right: 15px;
+            padding: 10px 15px; background: #ffffff; border: none;
+            border-radius: 8px; cursor: pointer; font-weight: bold; 
+            z-index: 1001; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            font-size: 13px; color: #e44d26;
         }
-        .ui-hidden-btn { right: 15px !important; }
 
-        .control-group { display: flex; align-items: center; margin-bottom: 12px; }
-        .control-group label { flex: 1; font-size: 13px; font-weight: bold; }
-        .control-group input { flex: 2; margin: 0 10px; }
-        .val { width: 25px; text-align: right; font-size: 13px; font-weight: bold; }
+        /* Bảng Cài đặt - Góc trên bên phải */
+        #ui-panel {
+            position: absolute; top: 65px; right: 15px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px; border-radius: 12px;
+            width: 240px; z-index: 1000;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+            transition: all 0.3s ease;
+            transform-origin: top right;
+        }
+
+        .hidden { opacity: 0; pointer-events: none; transform: scale(0.8); }
+
+        .control-group { display: flex; align-items: center; margin-bottom: 10px; }
+        .control-group label { flex: 1; font-size: 12px; font-weight: bold; color: #333; }
+        .control-group input { flex: 2; cursor: pointer; }
+        .val { width: 30px; text-align: right; font-size: 12px; font-weight: bold; }
         
-        hr { border: none; border-top: 1px solid #ddd; margin: 10px 0; }
-
-        #instruction {
-            position: absolute; top: 15px; left: 15px;
-            color: white; background: rgba(0,0,0,0.6);
-            padding: 12px; border-radius: 8px; font-size: 13px;
-            pointer-events: none; line-height: 1.5;
-            z-index: 999;
-        }
-        body.in-ar #instruction { display: none; }
+        hr { border: none; border-top: 1px solid #eee; margin: 10px 0; }
         body.in-ar { background-color: transparent !important; }
     </style>
     <script type="importmap">
@@ -61,35 +54,27 @@
 </head>
 <body>
 
-    <div id="instruction">
-        👉 Máy tính: Chuột để xoay/zoom/kéo<br>
-        👉 AR (Thực tế ảo): <br>
-        - 1 ngón: Di chuyển (Kéo)<br>
-        - 2 ngón (vuốt ngang): Xoay<br>
-        - 2 ngón (chụm/mở): Zoom
-    </div>
-
-    <div id="toggle-ui">Ẩn/Hiện Cài đặt</div>
-
+    <button id="toggle-ui">Cài đặt</button>
     <div id="ui-panel">
+        <div style="font-size: 13px; font-weight: bold; margin-bottom: 10px; text-align: center; color:#555;">KÍCH THƯỚC (1-10)</div>
         <div class="control-group">
-            <label style="color:#ff0000">Trục X:</label>
+            <label style="color:#e44d26">Trục X:</label>
             <input type="range" id="sizeX" min="1" max="10" step="0.5" value="2">
             <span class="val" id="valX">2</span>
         </div>
         <div class="control-group">
-            <label style="color:#00aa00">Trục Y:</label>
+            <label style="color:#4caf50">Trục Y:</label>
             <input type="range" id="sizeY" min="1" max="10" step="0.5" value="2">
             <span class="val" id="valY">2</span>
         </div>
         <div class="control-group">
-            <label style="color:#0000ff">Trục Z:</label>
+            <label style="color:#2196f3">Trục Z:</label>
             <input type="range" id="sizeZ" min="1" max="10" step="0.5" value="2">
             <span class="val" id="valZ">2</span>
         </div>
         <hr>
         <div class="control-group">
-            <label>Gập/Mở:</label>
+            <label style="font-weight: 800;">Gập / Mở:</label>
             <input type="range" id="foldProgress" min="0" max="1" step="0.01" value="1">
         </div>
     </div>
@@ -99,9 +84,9 @@
         import { ARButton } from 'three/addons/webxr/ARButton.js';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+        // 1. SETUP CORE
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.01, 100);
-        
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -118,17 +103,32 @@
         controls.target.set(2, 0, 2);
         controls.update();
 
-        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-        const sun = new THREE.DirectionalLight(0xffffff, 0.8);
-        sun.position.set(10, 20, 15);
-        scene.add(sun);
+        scene.add(new THREE.AmbientLight(0xffffff, 1.0));
+        const light = new THREE.DirectionalLight(0xffffff, 0.8);
+        light.position.set(10, 20, 15);
+        scene.add(light);
 
         const mainGroup = new THREE.Group();
         mainGroup.position.set(-1, -1, -2);
         scene.add(mainGroup);
 
+        // --- KHÓA SỰ KIỆN TRÊN UI ---
+        const uiElements = [document.getElementById('ui-panel'), document.getElementById('toggle-ui')];
+        
+        uiElements.forEach(el => {
+            ['touchstart', 'touchend', 'touchmove', 'mousedown', 'pointerdown'].forEach(ev => {
+                el.addEventListener(ev, (e) => e.stopPropagation());
+            });
+        });
+
+        // --- NÚT ẨN HIỆN BẢNG CÀI ĐẶT ---
+        document.getElementById('toggle-ui').onclick = () => {
+            const panel = document.getElementById('ui-panel');
+            panel.classList.toggle('hidden');
+        };
+
         // ==========================================
-        // HỆ TRỤC & SỐ ĐẾM
+        // 2. HỆ TRỤC & MÔ HÌNH 
         // ==========================================
         function createAxis(color, pLen, nLen, axis) {
             const pts = [];
@@ -152,7 +152,6 @@
             sprite.position.set(x, y, z); sprite.scale.set(0.8, 0.4, 0.4);
             mainGroup.add(sprite);
         }
-
         for(let i=-10; i<=10; i++) {
             if(i===0) continue;
             makeLabel(i, '#ffaaaa', i, -0.3, 0); 
@@ -160,62 +159,41 @@
             if(i>0) makeLabel(i, '#aaffaa', -0.4, i, 0); 
         }
 
-        // ==========================================
-        // MÔ HÌNH HỘP & BẢN LỀ (CROSS NET)
-        // ==========================================
         const boxContainer = new THREE.Group();
         mainGroup.add(boxContainer);
         const faces = {}; 
 
         function createFlatFace(width, depth, color) {
             const geom = new THREE.PlaneGeometry(width, depth);
-            const mat = new THREE.MeshStandardMaterial({ color: color, side: THREE.DoubleSide, transparent: true, opacity: 0.9 });
+            const mat = new THREE.MeshStandardMaterial({ color, side: 2, transparent: true, opacity: 0.9 });
             const mesh = new THREE.Mesh(geom, mat);
             mesh.rotation.x = -Math.PI / 2; 
-            mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(geom), new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 })));
+            mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(geom), new THREE.LineBasicMaterial({ color: 0xffffff })));
             return mesh;
         }
 
         function buildBox() {
             while(boxContainer.children.length > 0) boxContainer.remove(boxContainer.children[0]);
-
             const X = parseFloat(document.getElementById('sizeX').value);
             const Y = parseFloat(document.getElementById('sizeY').value);
             const Z = parseFloat(document.getElementById('sizeZ').value);
-
-            const assembly = new THREE.Group();
-            assembly.position.set(X/2, 0, Z/2);
-            boxContainer.add(assembly);
-
-            const bottom = createFlatFace(X, Z, 0x8B4513);
-            assembly.add(bottom);
-
-            faces.right = { hinge: new THREE.Group() };
-            faces.right.hinge.position.set(X/2, 0, 0);
+            const assembly = new THREE.Group(); assembly.position.set(X/2, 0, Z/2); boxContainer.add(assembly);
+            const bottom = createFlatFace(X, Z, 0x8B4513); assembly.add(bottom);
+            faces.right = { hinge: new THREE.Group() }; faces.right.hinge.position.set(X/2, 0, 0);
             const rightMesh = createFlatFace(Y, Z, 0xD2691E); rightMesh.position.set(Y/2, 0, 0);
             faces.right.hinge.add(rightMesh); assembly.add(faces.right.hinge);
-
-            faces.left = { hinge: new THREE.Group() };
-            faces.left.hinge.position.set(-X/2, 0, 0);
+            faces.left = { hinge: new THREE.Group() }; faces.left.hinge.position.set(-X/2, 0, 0);
             const leftMesh = createFlatFace(Y, Z, 0xCD853F); leftMesh.position.set(-Y/2, 0, 0);
             faces.left.hinge.add(leftMesh); assembly.add(faces.left.hinge);
-
-            faces.front = { hinge: new THREE.Group() };
-            faces.front.hinge.position.set(0, 0, Z/2);
+            faces.front = { hinge: new THREE.Group() }; faces.front.hinge.position.set(0, 0, Z/2);
             const frontMesh = createFlatFace(X, Y, 0xDAA520); frontMesh.position.set(0, 0, Y/2);
             faces.front.hinge.add(frontMesh); assembly.add(faces.front.hinge);
-
-            faces.back = { hinge: new THREE.Group() };
-            faces.back.hinge.position.set(0, 0, -Z/2);
+            faces.back = { hinge: new THREE.Group() }; faces.back.hinge.position.set(0, 0, -Z/2);
             const backMesh = createFlatFace(X, Y, 0xB8860B); backMesh.position.set(0, 0, -Y/2);
             faces.back.hinge.add(backMesh); assembly.add(faces.back.hinge);
-
-            faces.top = { hinge: new THREE.Group() };
-            faces.top.hinge.position.set(-Y, 0, 0); 
+            faces.top = { hinge: new THREE.Group() }; faces.top.hinge.position.set(-Y, 0, 0); 
             const topMesh = createFlatFace(X, Z, 0xF4A460); topMesh.position.set(-X/2, 0, 0);
-            faces.top.hinge.add(topMesh); 
-            faces.left.hinge.add(faces.top.hinge); 
-
+            faces.top.hinge.add(topMesh); faces.left.hinge.add(faces.top.hinge); 
             applyFold();
         }
 
@@ -229,104 +207,72 @@
         }
 
         // ==========================================
-        // TƯƠNG TÁC AR TRÊN MÀN HÌNH CẢM ỨNG
+        // 4. AR GESTURES (PAN, ROTATE, ZOOM)
         // ==========================================
         let initialDist = 0, initialScale = 1;
-        let isTouching = false;
-        let prevTouchX = 0, prevTouchY = 0;
-        let touchMode = 'none'; 
+        let prevX = 0, prevY = 0;
+        let mode = 'none'; 
 
         window.addEventListener('touchstart', (e) => {
             if (!renderer.xr.isPresenting) return;
-            
             if (e.touches.length === 2) {
                 initialDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
                 initialScale = mainGroup.scale.x;
-                prevTouchX = (e.touches[0].pageX + e.touches[1].pageX) / 2;
-                touchMode = 'zoom_or_rotate';
+                prevX = (e.touches[0].pageX + e.touches[1].pageX) / 2;
+                mode = 'zoom_rotate';
             } else if (e.touches.length === 1) {
-                touchMode = 'pan';
-                prevTouchX = e.touches[0].pageX;
-                prevTouchY = e.touches[0].pageY;
+                mode = 'pan';
+                prevX = e.touches[0].pageX; prevY = e.touches[0].pageY;
             }
         });
 
         window.addEventListener('touchmove', (e) => {
             if (!renderer.xr.isPresenting) return;
-
-            if (e.touches.length === 2 && touchMode === 'zoom_or_rotate') {
-                const currentDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-                const currentMidX = (e.touches[0].pageX + e.touches[1].pageX) / 2;
-                
-                if (Math.abs(currentDist - initialDist) > 15) {
-                    const zoom = (currentDist / initialDist) * initialScale;
-                    const finalZoom = Math.max(0.02, Math.min(zoom, 1)); 
-                    mainGroup.scale.set(finalZoom, finalZoom, finalZoom);
-                } 
-                else if (Math.abs(currentMidX - prevTouchX) > 5) {
-                    const deltaX = currentMidX - prevTouchX;
-                    mainGroup.rotation.y += deltaX * 0.01;
-                    prevTouchX = currentMidX;
+            if (e.touches.length === 2 && mode === 'zoom_rotate') {
+                const curDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+                const curMidX = (e.touches[0].pageX + e.touches[1].pageX) / 2;
+                if (Math.abs(curDist - initialDist) > 10) {
+                    mainGroup.scale.setScalar(Math.max(0.02, Math.min((curDist / initialDist) * initialScale, 1)));
+                } else {
+                    mainGroup.rotation.y += (curMidX - prevX) * 0.01;
+                    prevX = curMidX;
                 }
-            } else if (e.touches.length === 1 && touchMode === 'pan') {
-                const deltaX = e.touches[0].pageX - prevTouchX;
-                const deltaY = e.touches[0].pageY - prevTouchY;
-                
-                mainGroup.position.x += deltaX * 0.002;
-                mainGroup.position.y -= deltaY * 0.002; 
-                
-                prevTouchX = e.touches[0].pageX;
-                prevTouchY = e.touches[0].pageY;
+            } else if (e.touches.length === 1 && mode === 'pan') {
+                mainGroup.position.x += (e.touches[0].pageX - prevX) * 0.002;
+                mainGroup.position.y -= (e.touches[0].pageY - prevY) * 0.002;
+                prevX = e.touches[0].pageX; prevY = e.touches[0].pageY;
             }
         });
 
-        window.addEventListener('touchend', () => { 
-            touchMode = 'none'; 
-            initialDist = 0; 
-        });
+        window.addEventListener('touchend', () => { mode = 'none'; });
 
         // ==========================================
-        // ĐỒNG BỘ TRẠNG THÁI AR & GIAO DIỆN
+        // 5. ENGINE
         // ==========================================
         renderer.xr.addEventListener('sessionstart', () => {
             document.body.classList.add('in-ar');
-            mainGroup.scale.set(0.1, 0.1, 0.1); 
-            mainGroup.position.set(0, -0.5, -1.2); 
-            mainGroup.rotation.set(0, 0, 0); 
+            mainGroup.scale.setScalar(0.1); mainGroup.position.set(0, -0.5, -1.2);
             controls.enabled = false;
         });
 
         renderer.xr.addEventListener('sessionend', () => {
             document.body.classList.remove('in-ar');
-            mainGroup.scale.set(1, 1, 1);
-            mainGroup.position.set(-1, -1, -2);
-            mainGroup.rotation.set(0, 0, 0);
-            camera.position.set(6, 6, 8);
-            controls.target.set(2, 0, 2);
-            controls.enabled = true;
-            controls.update();
+            mainGroup.scale.setScalar(1); mainGroup.position.set(-1, -1, -2);
+            mainGroup.rotation.set(0, 0, 0); controls.enabled = true;
         });
 
-        const toggleBtn = document.getElementById('toggle-ui');
-        const uiPanel = document.getElementById('ui-panel');
-        toggleBtn.onclick = () => {
-            uiPanel.classList.toggle('collapsed');
-            toggleBtn.classList.toggle('ui-hidden-btn');
-        };
-
-        ['sizeX', 'sizeY', 'sizeZ'].forEach(id => document.getElementById(id).addEventListener('input', (e) => {
+        ['sizeX', 'sizeY', 'sizeZ'].forEach(id => document.getElementById(id).oninput = (e) => {
             document.getElementById('val'+id.slice(-1)).innerText = e.target.value;
             buildBox();
-        }));
-        document.getElementById('foldProgress').addEventListener('input', applyFold);
+        });
+        document.getElementById('foldProgress').oninput = applyFold;
 
         buildBox();
-
-        window.addEventListener('resize', () => {
+        window.onresize = () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        };
 
         renderer.setAnimationLoop(() => {
             if(!renderer.xr.isPresenting) controls.update();
