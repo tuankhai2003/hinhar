@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AR Geometry - Gập Mở Trục xOy</title>
+    <title>AR Geometry Pro - Lưới Mặt Đất xOz</title>
     <style>
         html, body { 
             margin: 0; 
@@ -109,7 +109,7 @@
 
         const controls = new OrbitControls(camera, renderer.domElement);
         // Thay đổi góc nhìn ban đầu thẳng vào mặt phẳng xOy
-        camera.position.set(5, 5, 12);
+        camera.position.set(6, 6, 12);
         controls.target.set(2, 2, 0);
         controls.update();
 
@@ -121,6 +121,12 @@
         const mainGroup = new THREE.Group();
         mainGroup.position.set(-1, -1, -2);
         scene.add(mainGroup);
+
+        // --- THÊM LƯỚI MẶT ĐẤT xOz ---
+        // Kích thước lưới 20x20 đơn vị, màu xám nhạt và xám đậm
+        const gridHelper = new THREE.GridHelper(20, 20, 0x888888, 0x444444);
+        gridHelper.position.set(0, 0, 0); // Đặt lưới sát gốc tọa độ Y=0 (Mặt sàn xOz)
+        mainGroup.add(gridHelper);
 
         const uiElements = [document.getElementById('ui-panel'), document.getElementById('toggle-ui')];
         uiElements.forEach(el => {
@@ -134,14 +140,14 @@
         };
 
         // ==========================================
-        // 2. HỆ TRỤC & MÔ HÌNH (THÊM SỐ ÂM CHO TRỤC Y)
+        // 2. HỆ TRỤC & MÔ HÌNH 
         // ==========================================
         function createAxis(color, pLen, nLen, axis) {
             const pts = [];
             if(axis==='x') { pts.push(new THREE.Vector3(-nLen,0,0)); pts.push(new THREE.Vector3(pLen,0,0)); }
-            if(axis==='y') { pts.push(new THREE.Vector3(0,-nLen,0)); pts.push(new THREE.Vector3(0,pLen,0)); } // Mở rộng Y âm
+            if(axis==='y') { pts.push(new THREE.Vector3(0,-nLen,0)); pts.push(new THREE.Vector3(0,pLen,0)); }
             if(axis==='z') { pts.push(new THREE.Vector3(0,0,-nLen)); pts.push(new THREE.Vector3(0,0,pLen)); }
-            return new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({color, linewidth: 2}));
+            return new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({color, linewidth: 3}));
         }
         mainGroup.add(createAxis(0xff5555, 11, 10, 'x'));
         mainGroup.add(createAxis(0x55ff55, 11, 10, 'y')); 
@@ -162,7 +168,7 @@
             if(i===0) continue;
             makeLabel(i, '#ffaaaa', i, -0.3, 0); 
             makeLabel(i, '#aaaaff', 0, -0.3, i); 
-            makeLabel(i, '#aaffaa', -0.4, i, 0); // Vẽ nhãn Y cho cả phần âm
+            makeLabel(i, '#aaffaa', -0.4, i, 0); 
         }
 
         const boxContainer = new THREE.Group();
@@ -174,8 +180,7 @@
             const geom = new THREE.PlaneGeometry(width, height);
             const mat = new THREE.MeshStandardMaterial({ color, side: 2, transparent: true, opacity: 0.9 });
             const mesh = new THREE.Mesh(geom, mat);
-            // Không xoay nữa, mặc định PlaneGeometry nằm trên xOy
-            mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(geom), new THREE.LineBasicMaterial({ color: 0xffffff })));
+            mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(geom), new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 })));
             return mesh;
         }
 
@@ -186,11 +191,11 @@
             const Z = parseFloat(document.getElementById('sizeZ').value);
             
             const assembly = new THREE.Group(); 
-            // Căn chỉnh tâm mặt lưng về xOy, phát triển về phía dương
+            // Căn chỉnh để góc dưới cùng bên trái của mặt lưng chạm đúng gốc tọa độ (0,0,0)
             assembly.position.set(X/2, Y/2, 0); 
             boxContainer.add(assembly);
             
-            // 1. MẶT LƯNG (BACK) - Cố định
+            // 1. MẶT LƯNG (BACK) - Cố định trên mặt phẳng xOy
             const back = createFaceXY(X, Y, 0x8B4513); 
             assembly.add(back);
             
@@ -218,7 +223,7 @@
             faces.top.hinge.add(topMesh); 
             assembly.add(faces.top.hinge);
             
-            // 5. MẶT DƯỚI (Đáy)
+            // 5. MẶT DƯỚI (Đáy) - Gắn ở y = -Y/2
             faces.bottom = { hinge: new THREE.Group() }; 
             faces.bottom.hinge.position.set(0, -Y/2, 0);
             const bottomMesh = createFaceXY(X, Z, 0xB8860B); 
@@ -226,7 +231,7 @@
             faces.bottom.hinge.add(bottomMesh); 
             assembly.add(faces.bottom.hinge);
             
-            // 6. MẶT TRƯỚC (NẮP) - Dính vào mặt trái
+            // 6. MẶT TRƯỚC (NẮP) - Dính vào mép ngoài của mặt trái
             faces.front = { hinge: new THREE.Group() }; 
             faces.front.hinge.position.set(-Z, 0, 0); 
             const frontMesh = createFaceXY(X, Y, 0xF4A460); 
@@ -239,7 +244,7 @@
 
         function applyFold() {
             const p = parseFloat(document.getElementById('foldProgress').value);
-            // Gập về phía trước (trục Z dương)
+            // Gập 90 độ về phía trước (trục Z dương)
             if(faces.right)  faces.right.hinge.rotation.y = p * (-Math.PI / 2);
             if(faces.left)   faces.left.hinge.rotation.y = p * (Math.PI / 2);
             if(faces.top)    faces.top.hinge.rotation.x = p * (Math.PI / 2);
@@ -248,7 +253,7 @@
         }
 
         // ==========================================
-        // 4. AR GESTURES
+        // 4. AR GESTURES (TƯƠNG TÁC)
         // ==========================================
         let initialDist = 0, initialScale = 1;
         let prevX = 0, prevY = 0;
@@ -288,12 +293,13 @@
         window.addEventListener('touchend', () => { mode = 'none'; });
 
         // ==========================================
-        // 5. ENGINE & FIX MÀN HÌNH ĐEN 
+        // 5. ENGINE & AR SESSIONS
         // ==========================================
         renderer.xr.addEventListener('sessionstart', () => {
             scene.background = null; 
             mainGroup.scale.setScalar(0.1); 
-            mainGroup.position.set(0, -0.2, -1);
+            // Đặt xuống một chút để mặt sàn (Lưới) khớp với nền đời thực
+            mainGroup.position.set(0, -0.4, -1);
             controls.enabled = false;
         });
 
